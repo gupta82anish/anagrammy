@@ -5,23 +5,26 @@ import React, {
   useEffect,
   ChangeEvent,
   KeyboardEvent,
-  ClipboardEvent,
 } from "react";
+import { Puzzle } from "@/app/page";
+
 
 interface InputProps {
-  length?: number;
-  onComplete?: (otp: string) => void;
+  onCompleteProp?: (otp: string) => void;
   className?: string;
   inputClassName?: string;
+	puzzle: Puzzle
 }
 
-function GuessInput({
-  length = 6,
-  onComplete,
-  className = "",
-  inputClassName = "",
-}: InputProps) {
+
+type statusType = "correct" | "incorrect" | "idle"
+
+function GuessInput({ onCompleteProp, className = "", inputClassName = "", puzzle}: InputProps) {
+	const length = puzzle.answer.length
   const [guess, setGuess] = useState<string[]>(new Array(length).fill(""));
+
+  const [status, setStatus] = useState<statusType>("idle");
+
   const inputRefs = useRef<(HTMLInputElement | null)[]>(
     new Array(length).fill(null)
   );
@@ -35,11 +38,16 @@ function GuessInput({
     // Shift focus to the next input when the otp state changes
     for (let i = 0; i < guess.length; i++) {
       if (guess[i] === "" && i > 0 && guess[i - 1] !== "") {
-        inputRefs.current[i]?.focus()
+        inputRefs.current[i]?.focus();
         break;
       }
     }
-  }, [guess])
+  }, [guess]);
+
+	const onComplete = (otp: string) => {
+		checkAnswer(otp)
+		onCompleteProp?.(otp)
+	}
 
   const handleChange = (
     index: number,
@@ -51,15 +59,19 @@ function GuessInput({
     newGuess[index] = value;
     setGuess(newGuess);
 
+		
+
     // Move focus to next input if current input is filled
     if (value && index < length - 1) {
-      inputRefs.current[index + 1]?.focus()
+      inputRefs.current[index + 1]?.focus();
     }
 
     // Check if OTP is complete
     if (newGuess.every((char) => char !== "")) {
-      onComplete?.(newGuess.join(""))
-    }
+      onComplete?.(newGuess.join(""));
+    }else{
+			setStatus("idle")
+		}
   };
 
   const handleKeyDown = (
@@ -71,6 +83,14 @@ function GuessInput({
       inputRefs.current[index - 1]?.focus();
     }
   };
+
+	const checkAnswer = (otp: string) => {
+		if(otp.toLowerCase() === puzzle.answer.toLowerCase()){
+			setStatus("correct")
+		} else {
+			setStatus("incorrect")
+		}
+	}
 
   return (
     <div className={`flex gap-2 items-center ${className}`}>
@@ -89,14 +109,14 @@ function GuessInput({
           style={{ textTransform: "capitalize" }}
           className={`
               w-10 h-10 text-center 
-              border-b-4 border-solid border-white 
-              focus:outline-none focus:border-b-8
-              focus:border-white
+              ${status=== "idle" ? "border-b-4 border-solid border-white" : ""}
+							${status === "correct" ? "border-4 border-solid border-green-500" : ""}
+							${status === "incorrect" ? "border-4 border-solid border-red-500" : ""}
+              focus:outline-none focus:border-b-8focus:border-white
               text-white font-bold text-2xl
               disabled:opacity-100
               bg-transparent
               disabled:bg-transparent
-              ${inputClassName}
             `}
         />
       ))}
