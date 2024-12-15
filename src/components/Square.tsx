@@ -2,6 +2,7 @@ import { Puzzle } from '@/app/page';
 import React from 'react';
 
 export type PuzzleProps = {
+	wordIndex: number
   puzzle: Puzzle;
   correct: boolean;
 };
@@ -13,7 +14,7 @@ type SquareProps = {
   correct: boolean;
 };
 
-function PuzzleRow({ puzzle, correct }: PuzzleProps) {
+function PuzzleRow({ wordIndex, puzzle, correct }: PuzzleProps) {
     const { jumble, answer } = puzzle;
   
     // Use a map to track occurrences of each letter in `jumble`

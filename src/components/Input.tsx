@@ -8,21 +8,29 @@ import React, {
 } from "react";
 import { Puzzle } from "@/app/page";
 
-
 interface InputProps {
-  onCompleteProp?: (otp: string) => void;
+  setCorrect?: (isCorrect: boolean) => void;
   className?: string;
   inputClassName?: string;
-	puzzle: Puzzle
+  puzzle: Puzzle;
+  wordIndex: number;
+  focusOnLoad?: boolean;
+  moveFocus?: (currentIndex: number, direction: "next" | "prev", wordLength: number) => void;
 }
 
+type statusType = "correct" | "incorrect" | "idle";
 
-type statusType = "correct" | "incorrect" | "idle"
-
-function GuessInput({ onCompleteProp, className = "", inputClassName = "", puzzle}: InputProps) {
-	const length = puzzle.answer.length
+function GuessInput({
+  setCorrect,
+  className = "",
+  inputClassName = "",
+  puzzle,
+  wordIndex,
+  focusOnLoad = false,
+  moveFocus,
+}: InputProps) {
+  const length = puzzle.answer.length;
   const [guess, setGuess] = useState<string[]>(new Array(length).fill(""));
-
   const [status, setStatus] = useState<statusType>("idle");
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>(
@@ -30,24 +38,17 @@ function GuessInput({ onCompleteProp, className = "", inputClassName = "", puzzl
   );
 
   useEffect(() => {
-    // Focus on the first input when component mounts
-    inputRefs.current[0]?.focus();
-  }, [length]);
-
-  useEffect(() => {
-    // Shift focus to the next input when the otp state changes
-    for (let i = 0; i < guess.length; i++) {
-      if (guess[i] === "" && i > 0 && guess[i - 1] !== "") {
-        inputRefs.current[i]?.focus();
-        break;
-      }
+    // Focus on the first input if `focusOnLoad` is true
+    if (focusOnLoad) {
+      inputRefs.current[0]?.focus();
     }
-  }, [guess]);
+  }, [focusOnLoad]);
 
-	const onComplete = (otp: string) => {
-		checkAnswer(otp)
-		onCompleteProp?.(otp)
-	}
+  const onComplete = (otp: string) => {
+    checkAnswer(otp);
+    // If the word is completed, move focus to the next word
+    moveFocus?.(wordIndex, "next", length);
+  };
 
   const handleChange = (
     index: number,
@@ -59,19 +60,17 @@ function GuessInput({ onCompleteProp, className = "", inputClassName = "", puzzl
     newGuess[index] = value;
     setGuess(newGuess);
 
-		
-
     // Move focus to next input if current input is filled
     if (value && index < length - 1) {
       inputRefs.current[index + 1]?.focus();
     }
 
-    // Check if OTP is complete
+    // Check if all inputs are filled
     if (newGuess.every((char) => char !== "")) {
-      onComplete?.(newGuess.join(""));
-    }else{
-			setStatus("idle")
-		}
+      onComplete(newGuess.join(""));
+    } else {
+      setStatus("idle");
+    }
   };
 
   const handleKeyDown = (
@@ -79,23 +78,31 @@ function GuessInput({ onCompleteProp, className = "", inputClassName = "", puzzl
     event: KeyboardEvent<HTMLInputElement>
   ) => {
     // Handle backspace to delete and move focus
-    if (event.key === "Backspace" && !guess[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
+    if (event.key === "Backspace") {
+      if (!guess[index] && index > 0) {
+        inputRefs.current[index - 1]?.focus();
+      } else if (index === 0 && guess[index] === "") {
+        // If the first input is emptied, move to the previous word
+        moveFocus?.(wordIndex, "prev", length);
+      }
     }
   };
 
-	const checkAnswer = (otp: string) => {
-		if(otp.toLowerCase() === puzzle.answer.toLowerCase()){
-			setStatus("correct")
-		} else {
-			setStatus("incorrect")
-		}
-	}
+  const checkAnswer = (otp: string) => {
+    if (otp.toLowerCase() === puzzle.answer.toLowerCase()) {
+      setStatus("correct");
+      setCorrect?.(true);
+    } else {
+      setStatus("incorrect");
+      setCorrect?.(false);
+    }
+  };
 
   return (
     <div className={`flex gap-2 items-center ${className}`}>
       {guess.map((char, index) => (
         <input
+				id={`input-${wordIndex}-${index}`}
           key={index}
           type="text"
           maxLength={1}
@@ -105,14 +112,21 @@ function GuessInput({ onCompleteProp, className = "", inputClassName = "", puzzl
           }}
           onChange={(e) => handleChange(index, e)}
           onKeyDown={(e) => handleKeyDown(index, e)}
-          disabled={index > 0 && !guess[index - 1]}
+					// disabled={index > 0 && !guess[index - 1]}
           style={{ textTransform: "capitalize" }}
-          className={`
-              w-10 h-10 text-center 
-              ${status=== "idle" ? "border-b-4 border-solid border-white" : ""}
-							${status === "correct" ? "border-4 border-solid border-green-500" : ""}
-							${status === "incorrect" ? "border-4 border-solid border-red-500" : ""}
-              focus:outline-none focus:border-b-8focus:border-white
+          className={`w-10 h-10 text-center 
+              ${status === "idle" ? "border-b-4 border-solid border-white" : ""}
+              ${
+                status === "correct"
+                  ? "border-4 border-solid border-green-500"
+                  : ""
+              }
+              ${
+                status === "incorrect"
+                  ? "border-4 border-solid border-red-500"
+                  : ""
+              }
+              focus:outline-none focus:border-b-8 focus:border-white
               text-white font-bold text-2xl
               disabled:opacity-100
               bg-transparent

@@ -8,81 +8,92 @@ export type Puzzle = {
   answer: string
 }
 
+export type Sentence = {
+  word: Puzzle[]
+}
+
 export default function Home() {
 
-  const [correct, setCorrect] = useState<boolean>(false);
+  // Track correctness for each word
+  
+  const [puzzle, setPuzzle] = useState<Sentence>({
+    word: [
+      {jumble: "HTIS",
+        answer: "THIS"},
+        {jumble: "SI",
+          answer: "IS"},
+          {
+            jumble: "HET",
+            answer: "THE"
+          },
+          {
+            jumble: "DEN",
+            answer: "END"
+          }
+        ]
+      });
+      
+  const [correctArray, setCorrectArray] = useState<boolean[]>(
+    new Array(puzzle.word.length).fill(false) // Initialize with `false` for each word
+  );
+  // Function to update correctness for a specific word
+  const updateCorrectness = (index: number, isCorrect: boolean) => {
+    setCorrectArray((prev) => {
+      const updated = [...prev];
+      updated[index] = isCorrect;
+      return updated;
+    });
+  };
 
-  const [puzzle, setPuzzle] = useState<Puzzle>({
-    jumble: "BENLMOT",
-    answer: "BELMONT"
-  });
+  const moveFocus = (currentIndex: number, direction: "next" | "prev", wordLength: number) => {
+    // const targetIndex = direction === "next" ? currentIndex + 1 : currentIndex - 1;
+    // const targetIndex = direction === "next" ? currentIndex + wordLength : currentIndex - wordLength;
+    // console.log('currentIndex', currentIndex);
+    // console.log('wordLength', wordLength);
+    // console.log('targetindex', targetIndex);
 
-  const onComplete = (otp: string) => {
-    console.log("OTP is", otp);
-    if(otp.toLowerCase() === puzzle.answer.toLowerCase()){
-      console.log("Correct Answer");
-      setCorrect(true);
-    } else {
-      console.log("Incorrect Answer");
-      setCorrect(false);
-    }
-  }
+    const targetId = direction === "next" ? `${currentIndex + 1}-0` : `${currentIndex - 1}-${wordLength -1}`;
+
+    // if (targetIndex >= 0 && targetIndex >= wordLength) {
+      console.log('invoking focus');
+      // const index = currentIndex + wordLength
+      const targetInput = document.getElementById(`input-${targetId}`)
+      console.log('targetInput', targetInput?.id);
+      targetInput?.focus();
+    // }
+  };
 
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <main className="flex flex-col row-start-2 gap-8 items-center justify-center">
-        <div className="flex flex-row items-center justify-center">
-          <PuzzleRow puzzle={puzzle} correct={correct}/>
+        <div className="flex flex-row gap-8 items-center justify-center">
+          {
+            puzzle.word.map((puzzle, index) => (
+              <PuzzleRow 
+                key={index}
+                wordIndex={index}
+                puzzle={puzzle} 
+                correct={correctArray[index]} 
+              />
+            ))
+          }
         </div>
-        <GuessInput puzzle={puzzle} onCompleteProp={onComplete}/>
+        <div className="flex flex-row gap-8 items-center justify-center">
+
+        {
+          puzzle.word.map((puzzle, index) => (
+            <GuessInput 
+              key={index}
+              wordIndex={index + 1} 
+              puzzle={puzzle} 
+              setCorrect={(isCorrect: boolean) => updateCorrectness(index, isCorrect)}
+              focusOnLoad={index === 0}
+              moveFocus={moveFocus}
+              />
+            ))
+          }
+          </div>
       </main>
-      {/* <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer> */}
     </div>
   );
 }
