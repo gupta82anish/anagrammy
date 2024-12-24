@@ -1,121 +1,38 @@
-"use client";
-import GuessInput from "@/components/Input";
-import PuzzleRow from "@/components/Square";
-import { create } from "domain";
-import { useEffect, useState } from "react";
+import { createClient } from "@/utils/supabase/client";
+import { cookies } from "next/headers";
+import ThePuzzle from "@/components/Puzzle";
+import { wordToPuzzle } from "@/helpers/functions";
 
-export type Puzzle = {
-  jumble: string;
-  answer: string;
-};
 
-export type Sentence = {
-  word: Puzzle[];
-};
+export default async function Home() {
 
-export default function Home() {
-  // Track correctness for each word
+  const cookieStore = await cookies()
+  const supabase = createClient()
 
-  const [puzzle, setPuzzle] = useState<Sentence>({
-    word: [
-      {
-        jumble: "HTIS",
-        answer: "THIS",
-      },
-      {
-        jumble: "SI",
-        answer: "IS",
-      },
-      {
-        jumble: "HET",
-        answer: "THE",
-      },
-      {
-        jumble: "DEN",
-        answer: "END",
-      },
-    ],
-  });
+  const { count } = await supabase
+    .from('puzzles')
+    .select('id', { count: 'exact', head: true })
 
-  const [wordLengthMap, setWordLengthMap] = useState<number[]>(
-    createWordLengthMap(puzzle)
-  );
+  const randomIndex = Math.floor(Math.random() * (count ?? 1))
 
-  function createWordLengthMap(sentence: Sentence) {
-    return sentence.word.map((puzzle) => puzzle.answer.length);
+  const { data: puzzle, error } = await supabase
+    .from('puzzles')
+    .select('*')
+    .limit(1)
+    .range(randomIndex, randomIndex)
+    .single()
+
+  if (error) {
+    console.error('Error fetching puzzle:', error)
+    // Provide a default puzzle if there's an error
+    return { word: 'default', hint: 'fallback puzzle' }
   }
 
 
-  const [correctArray, setCorrectArray] = useState<boolean[]>(
-    new Array(puzzle.word.length).fill(false) // Initialize with `false` for each word
-  );
-  // Function to update correctness for a specific word
-  const updateCorrectness = (index: number, isCorrect: boolean) => {
-    setCorrectArray((prev) => {
-      const updated = [...prev];
-      updated[index] = isCorrect;
-      return updated;
-    });
-  };
+  const {sentence, category} = wordToPuzzle(puzzle.puzzle, puzzle.category)
 
-  const moveFocus = (
-    currentIndex: number,
-    direction: "next" | "prev",
-    wordLength: number
-  ) => {
-    // const targetIndex = direction === "next" ? currentIndex + 1 : currentIndex - 1;
-    // const targetIndex = direction === "next" ? currentIndex + wordLength : currentIndex - wordLength;
-    console.log("currentIndex", currentIndex);
-    console.log("wordLength", wordLength);
-    console.log("maps", wordLengthMap);
-
-    console.log("Current Word Length", wordLengthMap[currentIndex - 1]);
-    console.log("Current Word", puzzle.word[currentIndex]?.answer);
-
-
-    const targetId =
-      direction === "next"
-        ? `${currentIndex + 1}-0`
-        : `${currentIndex - 1}-${wordLengthMap[currentIndex - 2] - 1}`;
-
-    console.log("targetId", targetId);
-    // if (targetIndex >= 0 && targetIndex >= wordLength) {
-    console.log("invoking focus");
-    // const index = currentIndex + wordLength
-    const targetInput = document.getElementById(`input-${targetId}`);
-    console.log("targetInput", targetInput?.id);
-    targetInput?.focus();
-    // }
-  };
 
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col row-start-2 gap-8 items-center justify-center">
-        <div className="flex flex-row gap-8 items-center justify-center">
-          {puzzle.word.map((puzzle, index) => (
-            <PuzzleRow
-              key={index}
-              wordIndex={index}
-              puzzle={puzzle}
-              correct={correctArray[index]}
-            />
-          ))}
-        </div>
-        <div className="flex flex-row gap-8 items-center justify-center">
-          {puzzle.word.map((puzzle, index) => (
-            <GuessInput
-              key={index}
-              wordIndex={index + 1}
-              puzzle={puzzle}
-              setCorrect={(isCorrect: boolean) =>
-                updateCorrectness(index, isCorrect)
-              }
-              focusOnLoad={index === 0}
-              moveFocus={moveFocus}
-            />
-          ))}
-        </div>
-      </main>
-    </div>
-  );
+    <ThePuzzle puzzle={sentence} category={category} />
+  )
 }

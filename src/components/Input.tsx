@@ -6,7 +6,7 @@ import React, {
   ChangeEvent,
   KeyboardEvent,
 } from "react";
-import { Puzzle } from "@/app/page";
+import { Puzzle } from "./Puzzle";
 
 interface InputProps {
   setCorrect?: (isCorrect: boolean) => void;
@@ -67,6 +67,7 @@ function GuessInput({
 
     // Check if all inputs are filled
     if (newGuess.every((char) => char !== "")) {
+      inputRefs.current[index]?.blur();
       onComplete(newGuess.join(""));
     } else {
       setStatus("idle");
@@ -118,7 +119,7 @@ function GuessInput({
               ${status === "idle" ? "border-b-4 border-solid border-white" : ""}
               ${
                 status === "correct"
-                  ? "border-4 border-solid border-green-500"
+                  ? "border-4 border-solid border-green-800 bg-green-800"
                   : ""
               }
               ${

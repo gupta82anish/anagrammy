@@ -1,5 +1,6 @@
-import { Puzzle } from '@/app/page';
+
 import React from 'react';
+import { Puzzle } from './Puzzle';
 
 export type PuzzleProps = {
 	wordIndex: number
@@ -74,7 +75,7 @@ function Square({
         transform: `translateX(${slideDistance}px)`,
       }}
     >
-      <span className="flex h-full justify-center items-center text-white font-bold text-2xl">
+      <span className="flex h-full capitalize justify-center items-center text-white font-bold text-2xl">
         {alphabet}
       </span>
     </div>
