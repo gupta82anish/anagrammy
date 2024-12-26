@@ -5,8 +5,14 @@ import React, {
   useEffect,
   ChangeEvent,
   KeyboardEvent,
+  useImperativeHandle,
 } from "react";
 import { Puzzle } from "./Puzzle";
+
+// Define the type for the exposed methods
+export interface InputRef {
+  reset: () => void;
+}
 
 interface InputProps {
   setCorrect?: (isCorrect: boolean) => void;
@@ -16,6 +22,7 @@ interface InputProps {
   wordIndex: number;
   focusOnLoad?: boolean;
   moveFocus?: (currentIndex: number, direction: "next" | "prev", wordLength: number) => void;
+  ref?: any;
 }
 
 type statusType = "correct" | "incorrect" | "idle";
@@ -28,6 +35,7 @@ function GuessInput({
   wordIndex,
   focusOnLoad = false,
   moveFocus,
+  ref
 }: InputProps) {
   const length = puzzle.answer.length;
   const [guess, setGuess] = useState<string[]>(new Array(length).fill(""));
@@ -49,6 +57,10 @@ function GuessInput({
     // If the word is completed, move focus to the next word
     moveFocus?.(wordIndex, "next", length);
   };
+
+  useImperativeHandle(ref, () => ({
+    reset: resetPuzzle,
+  }));
 
   const handleChange = (
     index: number,
@@ -98,6 +110,16 @@ function GuessInput({
       setCorrect?.(false);
     }
   };
+  
+
+  const resetPuzzle = () => {
+
+    console.log('resetting puzzle')
+
+    setGuess(new Array(length).fill(""));
+    setStatus("idle");
+    setCorrect?.(false);
+  }
 
   return (
     <div className={`flex gap-2 items-center ${className}`}>
@@ -116,7 +138,7 @@ function GuessInput({
 					// disabled={index > 0 && !guess[index - 1]}
           style={{ textTransform: "capitalize" }}
           className={`w-10 h-10 text-center 
-              ${status === "idle" ? "border-b-4 border-solid border-white" : ""}
+              ${status === "idle" ? "border-b-4 border-solid border-white bg-none" : ""}
               ${
                 status === "correct"
                   ? "border-4 border-solid border-green-800 bg-green-800"

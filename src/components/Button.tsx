@@ -4,9 +4,10 @@ interface ButtonProps {
   onClick: () => void
   className?: string
   text: string
+  showIcon?: boolean
 }
 
-export function Button({ onClick, className = '', text }: ButtonProps) {
+export function Button({ onClick, className = '', text, showIcon=true }: ButtonProps) {
   return (
     <button
       onClick={onClick}
@@ -20,7 +21,7 @@ export function Button({ onClick, className = '', text }: ButtonProps) {
         ${className}
       `}
     >
-      <svg
+      {showIcon && <svg
         className="w-4 h-4 mr-2"
         fill="none"
         stroke="currentColor"
@@ -33,7 +34,7 @@ export function Button({ onClick, className = '', text }: ButtonProps) {
           strokeWidth={2}
           d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
         />
-      </svg>
+      </svg>}
       {text}
     </button>
   )

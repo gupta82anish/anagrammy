@@ -1,7 +1,7 @@
 "use client";
-import GuessInput from "@/components/Input";
+import GuessInput, { InputRef } from "@/components/Input";
 import PuzzleRow from "@/components/Square";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pill } from "./CategoryPill";
 import { Button } from "./Button";
 
@@ -15,7 +15,14 @@ export type Sentence = {
   word: Puzzle[];
 };
 
-export default function ThePuzzle({ puzzle, category }: { puzzle: Sentence, category: string }) {
+export type ThePuzzleProps = {
+  puzzle: Sentence
+  category: string
+  getNewPuzzle: () => void
+}
+
+export default function ThePuzzle({ puzzle, category, getNewPuzzle }: ThePuzzleProps) {
+  const inputRef = useRef<InputRef[]>([])
 
   const [wordLengthMap, setWordLengthMap] = useState<number[]>(
     createWordLengthMap(puzzle)
@@ -24,6 +31,8 @@ export default function ThePuzzle({ puzzle, category }: { puzzle: Sentence, cate
   function createWordLengthMap(sentence: Sentence) {
     return sentence.word.map((puzzle) => puzzle.answer.length);
   }
+
+  
 
 
   const [correctArray, setCorrectArray] = useState<boolean[]>(
@@ -44,38 +53,41 @@ export default function ThePuzzle({ puzzle, category }: { puzzle: Sentence, cate
     direction: "next" | "prev",
     wordLength: number
   ) => {
-    // const targetIndex = direction === "next" ? currentIndex + 1 : currentIndex - 1;
-    // const targetIndex = direction === "next" ? currentIndex + wordLength : currentIndex - wordLength;
-    console.log("currentIndex", currentIndex);
-    console.log("wordLength", wordLength);
-    console.log("maps", wordLengthMap);
-
-    console.log("Current Word Length", wordLengthMap[currentIndex - 1]);
-    console.log("Current Word", puzzle.word[currentIndex]?.answer);
-
 
     const targetId =
       direction === "next"
         ? `${currentIndex + 1}-0`
         : `${currentIndex - 1}-${wordLengthMap[currentIndex - 2] - 1}`;
 
-    console.log("targetId", targetId);
-    // if (targetIndex >= 0 && targetIndex >= wordLength) {
-    console.log("invoking focus");
-    // const index = currentIndex + wordLength
     const targetInput = document.getElementById(`input-${targetId}`);
-    console.log("targetInput", targetInput?.id);
     targetInput?.focus();
-    // }
   };
+
+  const handleReset = () => {
+
+    console.log('handle reset')
+    puzzle.word.map((puzzle, index) => {
+      if(inputRef.current[index]){
+        console.log('resetting', index)
+      inputRef.current[index].reset()
+    }
+    })
+  }
 
   const resetGame = () => {
     setCorrectArray(new Array(puzzle.word.length).fill(false));
+    handleReset()
+    
   }
 
   const giveUp = () => {
     setCorrectArray(new Array(puzzle.word.length).fill(true));
   }
+
+ const startNewPuzzle = () => {
+    getNewPuzzle()
+    resetGame()
+ }
 
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
@@ -83,7 +95,8 @@ export default function ThePuzzle({ puzzle, category }: { puzzle: Sentence, cate
         <div className="flex gap-4">
             <Pill text={category} className="text-base px-4 py-2" />
             <Button onClick={resetGame} text="Reset" className="text-base px-4 py-2" />
-            <Button onClick={giveUp} text="Give Up" className="text-base px-4 py-2" />
+            <Button onClick={giveUp} text="Give Up" className="text-base px-4 py-2" showIcon={false}/>
+            <Button onClick={startNewPuzzle} text="New Puzzle" className="text-base px-4 py-2" showIcon={false}/>
         </div>
         <div className="flex flex-row gap-8 items-center justify-center">
           {puzzle.word.map((puzzle, index) => (
@@ -98,7 +111,7 @@ export default function ThePuzzle({ puzzle, category }: { puzzle: Sentence, cate
         <div className="flex flex-row gap-8 items-center justify-center">
           {puzzle.word.map((puzzle, index) => (
             <GuessInput
-              key={index}
+              key={`${index}-${puzzle.jumble}`}
               wordIndex={index + 1}
               puzzle={puzzle}
               setCorrect={(isCorrect: boolean) =>
@@ -106,6 +119,7 @@ export default function ThePuzzle({ puzzle, category }: { puzzle: Sentence, cate
               }
               focusOnLoad={index === 0}
               moveFocus={moveFocus}
+              ref={() =>(inputRef.current[index])}
             />
           ))}
         </div>
